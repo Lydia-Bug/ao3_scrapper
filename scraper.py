@@ -1,7 +1,10 @@
 import requests
 from bs4 import BeautifulSoup
+import json
+import csv
+import pprint
 
-URL = "https://archiveofourown.org/works?commit=Sort+and+Filter&work_search%5Bsort_column%5D=kudos_count&include_work_search%5Barchive_warning_ids%5D%5B%5D=17&include_work_search%5Barchive_warning_ids%5D%5B%5D=18&work_search%5Bother_tag_names%5D=&work_search%5Bexcluded_tag_names%5D=&work_search%5Bcrossover%5D=&work_search%5Bcomplete%5D=&work_search%5Bwords_from%5D=&work_search%5Bwords_to%5D=&work_search%5Bdate_from%5D=&work_search%5Bdate_to%5D=&work_search%5Bquery%5D=&work_search%5Blanguage_id%5D=&tag_id=Our+Flag+Means+Death+%28TV%29"
+URL = "https://archiveofourown.org/works?commit=Sort+and+Filter&work_search%5Bsort_column%5D=kudos_count&work_search%5Bother_tag_names%5D=&work_search%5Bexcluded_tag_names%5D=&work_search%5Bcrossover%5D=&work_search%5Bcomplete%5D=&work_search%5Bwords_from%5D=&work_search%5Bwords_to%5D=&work_search%5Bdate_from%5D=&work_search%5Bdate_to%5D=&work_search%5Bquery%5D=&work_search%5Blanguage_id%5D=&tag_id=Our+Flag+Means+Death+%28TV%29"
 page = requests.get(URL)
 
 soup = BeautifulSoup(page.content, "html.parser")
@@ -10,53 +13,80 @@ content = soup.find(id="main")
 
 works = content.find_all("li", class_="work")
 
-work_id = works[0].get("id").split("_",1)[1]
-work_url = "https://archiveofourown.org/works/" + work_id
+works_data = []
+for work in range(len(works)):
+    works_data.append({
+        "id": "",
+        "title": "",
+        "author": "",
+        "rating": "",
+        "category": "",
+        "iswip": "",
+        "last_updated": "",
+        "fandoms": [],
+        "warnings": [],
+        "realationships": [],
+        "characters": [],
+        "freeform_tags": [],
+        "summary": "",
+        "language": "",
+        "words": "",
+        "chapters": "",
+        "collections": "",
+        "comments": "",
+        "kudos": "",
+        "bookmarks": ""
+    })
 
-work_heading = works[0].find(class_="heading").find_all("a")
-work_title = work_heading[0].text
-work_author = work_heading[1].text
+for i in range(len(works)):
+    ## ID
+    works_data[i]["id"] = works[i].get("id").split("_",1)[1]
+    ## Data at the top
+    heading = works[i].find(class_="heading").find_all("a")
+    works_data[i]["title"] = heading[0].text
+    works_data[i]["author"] = heading[1].text
+    works_data[i]["rating"] = works[i].find(class_="rating").text
+    works_data[i]["category"] = works[i].find(class_="category").text ## Puts multiple calegorys in same string
+    works_data[i]["iswip"] = works[i].find(class_="iswip").text
+    works_data[i]["last_updated"] = works[i].find(class_="datetime").text
+    
+    ## Tags
+    fandoms = works[i].find(class_="fandoms").find_all("a")
+    for j in range(len(fandoms)):
+        works_data[i]["fandoms"].append(fandoms[j].text)
 
-work_fandoms = works[0].find(class_="fandoms").find_all("a")
-for i in range(len(work_fandoms)):
-    work_fandoms[i] = work_fandoms[i].text
+    warnings = works[i].find_all("li", class_="warnings")
+    for j in range(len(warnings)):
+        works_data[i]["warnings"].append(warnings[j].text)
 
-work_warnings = works[0].find_all("li", class_="warnings")
-for i in range(len(work_warnings)):
-    work_warnings[i] = work_warnings[i].text
+    realationships = works[i].find_all("li", class_="relationships")
+    for j in range(len(realationships)):
+        works_data[i]["realationships"].append(realationships[j].text)
 
-print(work_id)
-print(work_title)
-print(work_author)
-print(work_fandoms)
-print(work_warnings)
-#for fic in fics:
-#    print(fic)
+    characters = works[i].find_all("li", class_="characters")
+    for j in range(len(characters)):
+        works_data[i]["characters"].append(characters[j].text)
 
-"""
-results = soup.find(id="ResultsContainer")
+    freeform_tags = works[i].find_all("li", class_="freeforms")
+    for j in range(len(freeform_tags)):
+        works_data[i]["freeform_tags"].append(freeform_tags[j].text)
 
-job_elements = results.find_all("div", class_="card-content")
+    ## Summary
+    works_data[i]["summary"] = works[i].find(class_="summary").text.strip()
 
-python_jobs = results.find_all("h2", string=lambda text: "python" in text.lower())
+    ## Data at the bottom
+    works_data[i]["language"] = works[i].find("dd", class_="language").text
+    works_data[i]["words"] = works[i].find("dd", class_="words").text
+    works_data[i]["chapters"] = works[i].find("dd", class_="chapters").text
+    collections = works[i].find("dd", class_="collections")
+    if(collections != None): ## Not all works have collections
+        works_data[i]["collections"] = works[i].find("dd", class_="collections").text
+    works_data[i]["comments"] = works[i].find("dd", class_="comments").text
+    works_data[i]["kudos"] = works[i].find("dd", class_="kudos").text
+    works_data[i]["bookmarks"] = works[i].find("dd", class_="bookmarks").text
+    
 
-python_job_elements = [h2_element.parent.parent.parent for h2_element in python_jobs]
 
-for job_element in python_job_elements:
-    links = job_element.find_all("a")
-    for link in links:
-        link_url = link["href"]
-        print(f"Apply here: {link_url}\n")
-    #print(job_element.text.strip())
-    #print()
-#print(results.prettify())
+for key, value in works_data[0].items():
+    print(key, ' : ', value)
 
-for job_element in job_elements:
-    title_element = job_element.find("h2", class_="title")
-    company_element = job_element.find("h3", class_="company")
-    location_element = job_element.find("p", class_="location")
-    print(title_element.text.strip())
-    print(company_element.text.strip())
-    print(location_element.text.strip())
-    print()
-"""
