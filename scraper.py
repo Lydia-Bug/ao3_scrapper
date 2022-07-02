@@ -4,14 +4,30 @@ import json
 import csv
 import pprint
 
-URL = "https://archiveofourown.org/works?commit=Sort+and+Filter&work_search%5Bsort_column%5D=kudos_count&work_search%5Bother_tag_names%5D=&work_search%5Bexcluded_tag_names%5D=&work_search%5Bcrossover%5D=&work_search%5Bcomplete%5D=&work_search%5Bwords_from%5D=&work_search%5Bwords_to%5D=&work_search%5Bdate_from%5D=&work_search%5Bdate_to%5D=&work_search%5Bquery%5D=&work_search%5Blanguage_id%5D=&tag_id=Our+Flag+Means+Death+%28TV%29"
-page = requests.get(URL)
+url = "https://archiveofourown.org/tags/Our%20Flag%20Means%20Death%20(TV)/works?page=436"
 
-soup = BeautifulSoup(page.content, "html.parser")
+num = 25
+still_more_works = True
 
-content = soup.find(id="main")
+works = []
+while len(works) < num and still_more_works:
+    page = requests.get(url)
+    soup = BeautifulSoup(page.content, "html.parser")
+    content = soup.find(id="main")
+    works_on_page = content.find_all("li", class_="work")
 
-works = content.find_all("li", class_="work")
+    works.extend(works_on_page)
+    url = content.find(class_="next")
+    if url != None:
+        url = url.find("a")
+        if url != None:
+            url = "https://archiveofourown.org" + url["href"]
+        else:
+            still_more_works = False
+    else:
+        still_more_works = False
+
+print(works)
 
 works_data = []
 for work in range(len(works)):
@@ -19,6 +35,7 @@ for work in range(len(works)):
         "id": "",
         "title": "",
         "author": "",
+        "for": "",
         "rating": "",
         "category": "",
         "iswip": "",
@@ -38,13 +55,17 @@ for work in range(len(works)):
         "bookmarks": ""
     })
 
-for i in range(len(works)):
+
+for i in range(len(works_data)):
     ## ID
     works_data[i]["id"] = works[i].get("id").split("_",1)[1]
     ## Data at the top
     heading = works[i].find(class_="heading").find_all("a")
     works_data[i]["title"] = heading[0].text
-    works_data[i]["author"] = heading[1].text
+    if(len(heading) > 1): ## Some works don't have an author, published by anonymous?
+        works_data[i]["author"] = heading[1].text
+    if(len(heading) > 2):
+        works_data[i]["for"] = heading[2].text
     works_data[i]["rating"] = works[i].find(class_="rating").text
     works_data[i]["category"] = works[i].find(class_="category").text ## Puts multiple calegorys in same string
     works_data[i]["iswip"] = works[i].find(class_="iswip").text
@@ -72,21 +93,33 @@ for i in range(len(works)):
         works_data[i]["freeform_tags"].append(freeform_tags[j].text)
 
     ## Summary
-    works_data[i]["summary"] = works[i].find(class_="summary").text.strip()
+    summary = works[i].find(class_="summary")
+    if summary != None:
+        works_data[i]["summary"] = works[i].find(class_="summary").text.strip()
 
     ## Data at the bottom
     works_data[i]["language"] = works[i].find("dd", class_="language").text
     works_data[i]["words"] = works[i].find("dd", class_="words").text
     works_data[i]["chapters"] = works[i].find("dd", class_="chapters").text
     collections = works[i].find("dd", class_="collections")
-    if(collections != None): ## Not all works have collections
-        works_data[i]["collections"] = works[i].find("dd", class_="collections").text
-    works_data[i]["comments"] = works[i].find("dd", class_="comments").text
-    works_data[i]["kudos"] = works[i].find("dd", class_="kudos").text
-    works_data[i]["bookmarks"] = works[i].find("dd", class_="bookmarks").text
+    if(collections != None):
+        works_data[i]["collections"] = collections.text
+    comments = works[i].find("dd", class_="comments")
+    if(comments != None):
+        works_data[i]["comments"] = comments.text
+    kudos = works[i].find("dd", class_="kudos")
+    if(kudos != None):
+        works_data[i]["kudos"] = kudos.text
+    bookmarks = works[i].find("dd", class_="bookmarks")
+    if(bookmarks != None):
+        works_data[i]["bookmarks"] = bookmarks.text
+
+    print("work %d finished" % i)
     
 
 
-for key, value in works_data[0].items():
-    print(key, ' : ', value)
+for work in works_data:
+    for key, value in work.items():
+        print(key, ' : ', value)
+    print("\n-----------------------------------------------------\n")
 
