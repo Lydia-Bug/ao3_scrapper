@@ -4,10 +4,11 @@ import json
 import csv
 import pprint
 
-url = "https://archiveofourown.org/tags/Bluey%20(Cartoon%202018)/works"
+url = "https://archiveofourown.org/tags/Our%20Flag%20Means%20Death%20(TV)/works"
 
-NUM = 1
+NUM = 100
 GET_BODY = False
+CSV_FILE_NAME = "scrapper.csv"
 
 still_more_works = True
 
@@ -146,4 +147,11 @@ for work in works_data:
     for key, value in work.items():
         print(key, ' : ', value)
     print("\n-----------------------------------------------------\n")
+
+
+with open(CSV_FILE_NAME, 'w', encoding="utf-8", newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(list(works_data[0].keys()))
+    for i in range(len(works_data)):
+        writer.writerow(list(works_data[i].values()))
 
