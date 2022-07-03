@@ -1,3 +1,4 @@
+from pkg_resources import working_set
 import requests
 from bs4 import BeautifulSoup
 import json
@@ -6,9 +7,9 @@ import pprint
 
 url = "https://archiveofourown.org/tags/Our%20Flag%20Means%20Death%20(TV)/works"
 
-NUM = 100
+NUM = 30
 GET_BODY = False
-CSV_FILE_NAME = "scrapper.csv"
+CSV_FILE_NAME = "test.csv"
 
 still_more_works = True
 
@@ -16,7 +17,13 @@ works = []
 while len(works) < NUM and still_more_works:
     page = requests.get(url)
     soup = BeautifulSoup(page.content, "html.parser")
-    content = soup.find(id="main")
+    
+    content = None
+    while content == None:
+        page = requests.get(url)
+        soup = BeautifulSoup(page.content, "html.parser")
+        content = soup.find(id="main")
+    
     works_on_page = content.find_all("li", class_="work")
     works.extend(works_on_page)
     url = content.find(class_="next")
@@ -31,8 +38,12 @@ while len(works) < NUM and still_more_works:
 
     print("works got: %d" % len(works))
 
+if NUM > len(works):
+    number = len(works)
+if NUM < len(works):
+    number = NUM
 works_data = []
-for work in range(NUM):
+for work in range(number):
     works_data.append({
         "id": "",
         "title": "",
@@ -104,7 +115,7 @@ for i in range(len(works_data)):
     ## Data at the bottom
     works_data[i]["language"] = works[i].find("dd", class_="language").text
     works_data[i]["words"] = works[i].find("dd", class_="words").text
-    works_data[i]["chapters"] = works[i].find("dd", class_="chapters").text
+    works_data[i]["chapters"] = " " + works[i].find("dd", class_="chapters").text ## Space is there so excel doesn't format as date
     collections = works[i].find("dd", class_="collections")
     if(collections != None):
         works_data[i]["collections"] = collections.text
