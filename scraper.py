@@ -4,18 +4,19 @@ import json
 import csv
 import pprint
 
-url = "https://archiveofourown.org/tags/Our%20Flag%20Means%20Death%20(TV)/works?page=436"
+url = "https://archiveofourown.org/tags/Bluey%20(Cartoon%202018)/works"
 
-num = 25
+NUM = 1
+GET_BODY = False
+
 still_more_works = True
 
 works = []
-while len(works) < num and still_more_works:
+while len(works) < NUM and still_more_works:
     page = requests.get(url)
     soup = BeautifulSoup(page.content, "html.parser")
     content = soup.find(id="main")
     works_on_page = content.find_all("li", class_="work")
-
     works.extend(works_on_page)
     url = content.find(class_="next")
     if url != None:
@@ -27,10 +28,10 @@ while len(works) < num and still_more_works:
     else:
         still_more_works = False
 
-print(works)
+    print("works got: %d" % len(works))
 
 works_data = []
-for work in range(len(works)):
+for work in range(NUM):
     works_data.append({
         "id": "",
         "title": "",
@@ -42,7 +43,7 @@ for work in range(len(works)):
         "last_updated": "",
         "fandoms": [],
         "warnings": [],
-        "realationships": [],
+        "relationships": [],
         "characters": [],
         "freeform_tags": [],
         "summary": "",
@@ -52,7 +53,9 @@ for work in range(len(works)):
         "collections": "",
         "comments": "",
         "kudos": "",
-        "bookmarks": ""
+        "bookmarks": "",
+        "body": "",
+        "notes": []
     })
 
 
@@ -80,9 +83,9 @@ for i in range(len(works_data)):
     for j in range(len(warnings)):
         works_data[i]["warnings"].append(warnings[j].text)
 
-    realationships = works[i].find_all("li", class_="relationships")
-    for j in range(len(realationships)):
-        works_data[i]["realationships"].append(realationships[j].text)
+    relationships = works[i].find_all("li", class_="relationships")
+    for j in range(len(relationships)):
+        works_data[i]["relationships"].append(relationships[j].text)
 
     characters = works[i].find_all("li", class_="characters")
     for j in range(len(characters)):
@@ -114,8 +117,29 @@ for i in range(len(works_data)):
     if(bookmarks != None):
         works_data[i]["bookmarks"] = bookmarks.text
 
-    print("work %d finished" % i)
-    
+    if GET_BODY:
+        url = "https://archiveofourown.org/works/" + works_data[i]["id"]
+        page = requests.get(url)
+        soup = BeautifulSoup(page.content, "html.parser")
+        content = soup.find(id="main")
+
+        if content == None:
+            print(works_data[i]["title"] + " none")
+
+        entire_works = content.find("li", class_="entire") ## If multiple chapters
+        if entire_works != None:
+            url = url  + "?view_full_work=true"
+            page = requests.get(url)
+            soup = BeautifulSoup(page.content, "html.parser")
+            content = soup.find(id="main")
+
+        works_data[i]["body"] = content.find(id="chapters").text
+
+        notes = content.find_all("div", class_="notes")
+        for j in range(len(notes)):
+            works_data[i]["notes"].append(notes[j].text)
+
+    print("works analyzed: %d" % i)
 
 
 for work in works_data:
