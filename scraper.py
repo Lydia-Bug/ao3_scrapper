@@ -5,7 +5,7 @@ import csv
 
 url = "https://archiveofourown.org/tags/Our%20Flag%20Means%20Death%20(TV)/works"
 
-NUM = 5
+NUM = 50
 GET_BODY = False
 CSV_FILE_NAME = "test.csv"
 
@@ -57,7 +57,8 @@ while len(works_data) < NUM and still_more_works:
             "summary": "",
             "language": "",
             "words": "",
-            "chapters": "",
+            "completed_chapters": "",
+            "total_chapters": "", ## Can be ? char
             "collections": "",
             "comments": "",
             "kudos": "",
@@ -110,19 +111,31 @@ while len(works_data) < NUM and still_more_works:
         ## Data at the bottom
         works_data[-1]["language"] = works[i].find("dd", class_="language").text
         works_data[-1]["words"] = works[i].find("dd", class_="words").text
-        works_data[-1]["chapters"] = " " + works[i].find("dd", class_="chapters").text ## Space is there so excel doesn't format as date
+            ## Chapters
+        chapters = works[i].find("dd", class_="chapters").text.split("/")
+        works_data[-1]["completed_chapters"] = chapters[0]
+        works_data[-1]["total_chapters"] = chapters[1]
+
         collections = works[i].find("dd", class_="collections")
         if(collections != None):
             works_data[-1]["collections"] = collections.text
+        else:
+            works_data[-1]["collections"] = 0
         comments = works[i].find("dd", class_="comments")
         if(comments != None):
             works_data[-1]["comments"] = comments.text
+        else:
+            works_data[-1]["comments"] = 0
         kudos = works[i].find("dd", class_="kudos")
         if(kudos != None):
             works_data[-1]["kudos"] = kudos.text
+        else: 
+            works_data[-1]["kudos"] = 0
         bookmarks = works[i].find("dd", class_="bookmarks")
         if(bookmarks != None):
             works_data[-1]["bookmarks"] = bookmarks.text
+        else:
+            works_data[-1]["bookmarks"] = 0
 
         if GET_BODY:
             body_url = "https://archiveofourown.org/works/" + works_data[-1]["id"]
