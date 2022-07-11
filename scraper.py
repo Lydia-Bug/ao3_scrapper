@@ -3,11 +3,11 @@ import requests
 from bs4 import BeautifulSoup ##Dependency
 import csv
 
-url = "https://archiveofourown.org/tags/Our%20Flag%20Means%20Death%20(TV)/works"
+url = "https://archiveofourown.org/works?work_search%5Bsort_column%5D=kudos_count&work_search%5Bother_tag_names%5D=&work_search%5Bexcluded_tag_names%5D=&work_search%5Bcrossover%5D=&work_search%5Bcomplete%5D=&work_search%5Bwords_from%5D=&work_search%5Bwords_to%5D=10&work_search%5Bdate_from%5D=&work_search%5Bdate_to%5D=&work_search%5Bquery%5D=&work_search%5Blanguage_id%5D=&commit=Sort+and+Filter&tag_id=Our+Flag+Means+Death+%28TV%29"
 
-NUM = 50
+NUM = 20
 GET_BODY = False
-CSV_FILE_NAME = "test.csv"
+CSV_FILE_NAME = "test2.csv"
 
 still_more_works = True
 
