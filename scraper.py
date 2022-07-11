@@ -1,13 +1,11 @@
 from pkg_resources import working_set
 import requests
-from bs4 import BeautifulSoup
-import json
+from bs4 import BeautifulSoup ##Dependency
 import csv
-import pprint
 
 url = "https://archiveofourown.org/tags/Our%20Flag%20Means%20Death%20(TV)/works"
 
-NUM = 50
+NUM = 5
 GET_BODY = False
 CSV_FILE_NAME = "test.csv"
 
@@ -154,15 +152,17 @@ while len(works_data) < NUM and still_more_works:
         print("works analyzed: %d" % len(works_data))
 
 
+"""
 for work in works_data:
     for key, value in work.items():
         print(key, ' : ', value)
     print("\n-----------------------------------------------------\n")
-
+"""
 
 with open(CSV_FILE_NAME, 'w', encoding="utf-8", newline='') as file:
     writer = csv.writer(file)
     writer.writerow(list(works_data[0].keys()))
     for i in range(len(works_data)):
         writer.writerow(list(works_data[i].values()))
+
 
