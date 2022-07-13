@@ -3,18 +3,49 @@ import requests
 from bs4 import BeautifulSoup ##Dependency
 import csv
 
-url = "https://archiveofourown.org/works?work_search%5Bsort_column%5D=kudos_count&work_search%5Bother_tag_names%5D=&work_search%5Bexcluded_tag_names%5D=&work_search%5Bcrossover%5D=&work_search%5Bcomplete%5D=&work_search%5Bwords_from%5D=&work_search%5Bwords_to%5D=10&work_search%5Bdate_from%5D=&work_search%5Bdate_to%5D=&work_search%5Bquery%5D=&work_search%5Blanguage_id%5D=&commit=Sort+and+Filter&tag_id=Our+Flag+Means+Death+%28TV%29"
+URL = "https://archiveofourown.org/tags/Our%20Flag%20Means%20Death%20(TV)/works?commit=Sort+and+Filter&page=2&work_search%5Bcomplete%5D=&work_search%5Bcrossover%5D=&work_search%5Bdate_from%5D=2022-07-01&work_search%5Bdate_to%5D=&work_search%5Bexcluded_tag_names%5D=&work_search%5Blanguage_id%5D=&work_search%5Bother_tag_names%5D=&work_search%5Bquery%5D=&work_search%5Bsort_column%5D=kudos_count&work_search%5Bwords_from%5D=&work_search%5Bwords_to%5D="
 
-NUM = 20
+NUM = 40
 GET_BODY = False
+GET_FIRST = True ##Get first 100, or 100 distributed throughout works
 CSV_FILE_NAME = "test2.csv"
 
-still_more_works = True
+def find_url_with_page_number():
+    ### To find the url with 'page=_' in it, to more easily get to the next page or 10th next page
+    ## Sometimes the page request or something doesn't work first go
+    content = None
+    while content == None:
+        page = requests.get(URL)
+        soup = BeautifulSoup(page.content, "html.parser")
+        content = soup.find(id="main")
+    ## The link when you click next contains 'page=_
+    url = content.find(class_="next")
+    if url != None:
+        url = url.find("a")
+        if url != None:
+            url = "https://archiveofourown.org" + url["href"]
+        else:
+            return None
+    else:
+        return None
+    print(url)
+    print()
+    ## Create array with first half of array and page number and second half of array
+    url = url.split('page=')
+    page = url[1][0]
+    url[0] = url[0] + "page="
+    url[1] = url[1][1:]
+    url.insert(1, int(page)-1)
 
+    print(url[0] + str(url[1]) + url[2])
+    return url
+
+url_arr = find_url_with_page_number()
+
+still_more_works = True
+url = url_arr[0] + str(url_arr[1]) + url_arr[2]
 works_data = []
 while len(works_data) < NUM and still_more_works:
-    page = requests.get(url)
-    soup = BeautifulSoup(page.content, "html.parser")
     ## Sometimes the page request or something doesn't work first go
     content = None
     while content == None:
@@ -22,17 +53,22 @@ while len(works_data) < NUM and still_more_works:
         soup = BeautifulSoup(page.content, "html.parser")
         content = soup.find(id="main")
     
+    ## Find all individual works
     works = content.find_all("li", class_="work")
-    ## Find the next page of works
+
+    ## Check there is another page, and create url
     url = content.find(class_="next")
     if url != None:
         url = url.find("a")
         if url != None:
-            url = "https://archiveofourown.org" + url["href"]
+            url_arr[1] = url_arr[1] + 1
+            url = url_arr[0] + str(url_arr[1]) + url_arr[2]
         else:
             still_more_works = False
     else:
         still_more_works = False
+
+    
     ## How many works to analyze
     if NUM - len(works_data) > len(works):
         works_to_analyze = len(works)
@@ -177,5 +213,3 @@ with open(CSV_FILE_NAME, 'w', encoding="utf-8", newline='') as file:
     writer.writerow(list(works_data[0].keys()))
     for i in range(len(works_data)):
         writer.writerow(list(works_data[i].values()))
-
-
