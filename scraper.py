@@ -7,7 +7,7 @@ import math
 
 URL = "https://archiveofourown.org/works?commit=Sort+and+Filter&work_search%5Bsort_column%5D=revised_at&include_work_search%5Brating_ids%5D%5B%5D=10&work_search%5Bother_tag_names%5D=&work_search%5Bexcluded_tag_names%5D=&work_search%5Bcrossover%5D=&work_search%5Bcomplete%5D=&work_search%5Bwords_from%5D=&work_search%5Bwords_to%5D=&work_search%5Bdate_from%5D=&work_search%5Bdate_to%5D=&work_search%5Bquery%5D=&work_search%5Blanguage_id%5D=&tag_id=Our+Flag+Means+Death+%28TV%29"
 
-NUM = 1000
+NUM = 501
 GET_BODY = False ## This will mess up the formatting of the excel sheet, but the actual file is still fine
 GET_FIRST = False##Get first 100, or 100 distributed throughout works
 CSV_FILE_NAME = "test2.csv"
@@ -44,7 +44,7 @@ def get_page_number_url(content):
 def get_every_th_page(content):
     heading = content.find("h2", class_="heading").text.split()
     total_num_works = heading[heading.index("of") + 1]
-    return math.ceil(int(total_num_works)/NUM)
+    return int(int(total_num_works)/NUM)
 ## Checks that there is another page
 def get_still_more_works(content):
     next_url = content.find(class_="next")
