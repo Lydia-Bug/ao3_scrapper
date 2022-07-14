@@ -3,23 +3,25 @@ import requests
 from bs4 import BeautifulSoup ##Dependency
 import csv
 import pandas as pd  ##Dependency
+import math
 
-URL = "https://archiveofourown.org/works?work_search%5Bsort_column%5D=kudos_count&include_work_search%5Brating_ids%5D%5B%5D=10&work_search%5Bother_tag_names%5D=&work_search%5Bexcluded_tag_names%5D=&work_search%5Bcrossover%5D=&work_search%5Bcomplete%5D=&work_search%5Bwords_from%5D=&work_search%5Bwords_to%5D=&work_search%5Bdate_from%5D=&work_search%5Bdate_to%5D=&work_search%5Bquery%5D=&work_search%5Blanguage_id%5D=&commit=Sort+and+Filter&tag_id=Our+Flag+Means+Death+%28TV%29"
+URL = "https://archiveofourown.org/works?commit=Sort+and+Filter&work_search%5Bsort_column%5D=revised_at&include_work_search%5Brating_ids%5D%5B%5D=10&work_search%5Bother_tag_names%5D=&work_search%5Bexcluded_tag_names%5D=&work_search%5Bcrossover%5D=&work_search%5Bcomplete%5D=&work_search%5Bwords_from%5D=&work_search%5Bwords_to%5D=&work_search%5Bdate_from%5D=&work_search%5Bdate_to%5D=&work_search%5Bquery%5D=&work_search%5Blanguage_id%5D=&tag_id=Our+Flag+Means+Death+%28TV%29"
 
-NUM = 5
+NUM = 1000
 GET_BODY = False ## This will mess up the formatting of the excel sheet, but the actual file is still fine
-GET_FIRST = True ##Get first 100, or 100 distributed throughout works
+GET_FIRST = False##Get first 100, or 100 distributed throughout works
 CSV_FILE_NAME = "test2.csv"
 
-## Gets url with page number puts it in an array with page number at index 1, so it can easily be changed
-def get_page_number_url():
-    ### To find the url with 'page=_' in it, to more easily get to the next page or 10th next page
+def get_page_content(url):
     ## Sometimes the page request or something doesn't work first go
     content = None
     while content == None:
-        page = requests.get(URL)
+        page = requests.get(url)
         soup = BeautifulSoup(page.content, "html.parser")
         content = soup.find(id="main")
+    return content
+## Gets url with page number puts it in an array with page number at index 1, so it can easily be changed
+def get_page_number_url(content):
     ## The link when you click next contains 'page=_
     url = content.find(class_="next")
     if url != None:
@@ -39,14 +41,10 @@ def get_page_number_url():
 
     return url
 
-def get_page_content(url):
-    ## Sometimes the page request or something doesn't work first go
-    content = None
-    while content == None:
-        page = requests.get(url)
-        soup = BeautifulSoup(page.content, "html.parser")
-        content = soup.find(id="main")
-    return content
+def get_every_th_page(content):
+    heading = content.find("h2", class_="heading").text.split()
+    total_num_works = heading[heading.index("of") + 1]
+    return math.ceil(int(total_num_works)/NUM)
 ## Checks that there is another page
 def get_still_more_works(content):
     next_url = content.find(class_="next")
@@ -67,8 +65,13 @@ def write_csv_file(works_data):
             writer.writerow(list(works_data[i].values()))
 
 ## Initialize variables
-url_arr = get_page_number_url()
+content = get_page_content(URL)
+url_arr = get_page_number_url(content)
 still_more_works = True 
+if GET_FIRST:
+    every_th_page = 1
+else:
+    every_th_page = get_every_th_page(content)
 if(url_arr != None):
     url = url_arr[0] + str(url_arr[1]) + url_arr[2]
 else:
@@ -80,7 +83,7 @@ while len(works_data) < NUM and still_more_works:
     works = content.find_all("li", class_="work") ##Get array of works
     still_more_works = get_still_more_works(content) ##Find if there aren't anymore works
     if(url_arr != None): ##Create url of next page
-        url_arr[1] = url_arr[1] + 1
+        url_arr[1] = url_arr[1] + every_th_page
         url = url_arr[0] + str(url_arr[1]) + url_arr[2]
     ## How many works to analyze
     if NUM - len(works_data) > len(works):
@@ -183,6 +186,12 @@ while len(works_data) < NUM and still_more_works:
             works_data[-1]["bookmarks"] = bookmarks.text
         else:
             works_data[-1]["bookmarks"] = 0
+
+        ##Get rid of commas in values
+        for i in range(5):
+            key = list(works_data[-1].keys())[i+15]
+            if("," in str(works_data[-1][key])):
+                works_data[-1][key] = works_data[-1][key].replace(",", "")
 
         if GET_BODY:
             body_url = "https://archiveofourown.org/works/" + works_data[-1]["id"]
