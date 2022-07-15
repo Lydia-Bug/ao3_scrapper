@@ -8,9 +8,10 @@ import datetime
 
 URL = "https://archiveofourown.org/tags/Our%20Flag%20Means%20Death%20(TV)/works"
 
-num = "all"
-GET_BODY = False ## This will mess up the formatting of the excel sheet, but the actual file is still fine
-GET_FIRST = True##Get first 100, or 100 distributed throughout works
+num = 2
+GET_PUBLISHED = False ## This takes a while cause you have to into the fic to get this info
+GET_BODY = True ## This will mess up the formatting of the excel sheet, but the actual file is still fine
+GET_FIRST = True ##Get first 100, or 100 distributed throughout works
 CSV_FILE_NAME = "allworks.csv"
 
 def get_page_content(url):
@@ -61,32 +62,40 @@ def get_still_more_works(content):
             return True
 
 def convert_to_datetime(date):
-    date = date.split()
-    if(date[1] == "Jan"):
-        month = 1
-    elif(date[1] == "Feb"):
-        month = 2
-    elif(date[1] == "Mar"):
-        month = 3
-    elif(date[1] == "Apr"):
-        month = 4
-    elif(date[1] == "May"):
-        month = 5
-    elif(date[1] == "Jun"):
-        month = 6
-    elif(date[1] == "Jul"):
-        month = 7
-    elif(date[1] == "Aug"):
-        month = 8
-    elif(date[1] == "Sep"):
-        month = 9
-    elif(date[1] == "Oct"):
-        month = 10
-    elif(date[1] == "Nov"):
-        month = 11
-    elif(date[1] == "Dec"):
-        month = 12
-    return datetime.datetime(int(date[2]), month, int(date[0]))
+    if("-" in date):
+        date = date.split("-")
+        day = int(date[2])
+        month = int(date[1])
+        year = int(date[0])
+    else:
+        date = date.split()
+        day = int(date[0])
+        year = int(date[2])
+        if(date[1] == "Jan"):
+            month = 1
+        elif(date[1] == "Feb"):
+            month = 2
+        elif(date[1] == "Mar"):
+            month = 3
+        elif(date[1] == "Apr"):
+            month = 4
+        elif(date[1] == "May"):
+            month = 5
+        elif(date[1] == "Jun"):
+            month = 6
+        elif(date[1] == "Jul"):
+            month = 7
+        elif(date[1] == "Aug"):
+            month = 8
+        elif(date[1] == "Sep"):
+            month = 9
+        elif(date[1] == "Oct"):
+            month = 10
+        elif(date[1] == "Nov"):
+            month = 11
+        elif(date[1] == "Dec"):
+            month = 12
+    return datetime.datetime(year, month, day)
 
 def write_csv_file(works_data):
     with open(CSV_FILE_NAME, 'w', encoding="utf-8", newline='') as file:
@@ -147,6 +156,7 @@ while len(works_data) < num and still_more_works:
             "kudos": "",
             "hits": "",
             "bookmarks": "",
+            "published": "",
             "body": "",
             "notes": []
         })
@@ -231,23 +241,27 @@ while len(works_data) < num and still_more_works:
             if("," in str(works_data[-1][key])):
                 works_data[-1][key] = works_data[-1][key].replace(",", "")
 
-        if GET_BODY:
+        if GET_BODY OR GET_PUBLISHED:
             body_url = "https://archiveofourown.org/works/" + works_data[-1]["id"]
             
             content = get_page_content(body_url)
 
-            entire_works = content.find("li", class_="entire") ## If multiple chapters
-            if entire_works != None:
-                body_url = body_url  + "?view_full_work=true"
-                page = requests.get(body_url)
-                soup = BeautifulSoup(page.content, "html.parser")
-                content = soup.find(id="main")
+            if GET_PUBLISHED:
+                works_data[-1]["published"] = convert_to_datetime(content.find("dd", class_="published").text)
 
-            works_data[-1]["body"] = content.find(id="chapters").text
+            if GET_BODY:
+                entire_works = content.find("li", class_="entire") ## If multiple chapters
+                if entire_works != None:
+                    body_url = body_url  + "?view_full_work=true"
+                    page = requests.get(body_url)
+                    soup = BeautifulSoup(page.content, "html.parser")
+                    content = soup.find(id="main")
 
-            notes = content.find_all("div", class_="notes")
-            for j in range(len(notes)):
-                works_data[-1]["notes"].append(notes[j].text)
+                works_data[-1]["body"] = content.find(id="chapters").text
+
+                notes = content.find_all("div", class_="notes")
+                for j in range(len(notes)):
+                    works_data[-1]["notes"].append(notes[j].text)
 
         print("works analyzed: %d" % len(works_data))
 
