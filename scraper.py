@@ -8,9 +8,9 @@ import datetime
 
 URL = "https://archiveofourown.org/tags/Our%20Flag%20Means%20Death%20(TV)/works"
 
-num = 2
+num = "all"
 GET_PUBLISHED = False ## This takes a while cause you have to into the fic to get this info
-GET_BODY = True ## This will mess up the formatting of the excel sheet, but the actual file is still fine
+GET_BODY = False ## This will mess up the formatting of the excel sheet, but the actual file is still fine
 GET_FIRST = True ##Get first 100, or 100 distributed throughout works
 CSV_FILE_NAME = "allworks.csv"
 
@@ -241,7 +241,7 @@ while len(works_data) < num and still_more_works:
             if("," in str(works_data[-1][key])):
                 works_data[-1][key] = works_data[-1][key].replace(",", "")
 
-        if GET_BODY OR GET_PUBLISHED:
+        if GET_BODY or GET_PUBLISHED:
             body_url = "https://archiveofourown.org/works/" + works_data[-1]["id"]
             
             content = get_page_content(body_url)
