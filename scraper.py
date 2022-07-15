@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup ##Dependency
 import csv
 import pandas as pd  ##Dependency
 import math
+import datetime
 
 URL = "https://archiveofourown.org/works?commit=Sort+and+Filter&work_search%5Bsort_column%5D=revised_at&include_work_search%5Brating_ids%5D%5B%5D=10&work_search%5Bother_tag_names%5D=&work_search%5Bexcluded_tag_names%5D=&work_search%5Bcrossover%5D=&work_search%5Bcomplete%5D=&work_search%5Bwords_from%5D=&work_search%5Bwords_to%5D=&work_search%5Bdate_from%5D=&work_search%5Bdate_to%5D=&work_search%5Bquery%5D=&work_search%5Blanguage_id%5D=&tag_id=Our+Flag+Means+Death+%28TV%29"
 
@@ -58,6 +59,34 @@ def get_still_more_works(content):
             return False
         else:
             return True
+
+def convert_to_datetime(date):
+    date = date.split()
+    if(date[1] == "Jan"):
+        month = 1
+    elif(date[1] == "Feb"):
+        month = 2
+    elif(date[1] == "Mar"):
+        month = 3
+    elif(date[1] == "Apr"):
+        month = 4
+    elif(date[1] == "May"):
+        month = 5
+    elif(date[1] == "Jun"):
+        month = 6
+    elif(date[1] == "Jul"):
+        month = 7
+    elif(date[1] == "Aug"):
+        month = 8
+    elif(date[1] == "Sep"):
+        month = 9
+    elif(date[1] == "Oct"):
+        month = 10
+    elif(date[1] == "Nov"):
+        month = 11
+    elif(date[1] == "Dec"):
+        month = 12
+    return datetime.datetime(int(date[2]), month, int(date[0]))
 
 def write_csv_file(works_data):
     with open(CSV_FILE_NAME, 'w', encoding="utf-8", newline='') as file:
@@ -132,8 +161,9 @@ while len(works_data) < num and still_more_works:
         works_data[-1]["rating"] = works[i].find(class_="rating").text
         works_data[-1]["category"] = works[i].find(class_="category").text ## Puts multiple calegorys in same string
         works_data[-1]["iswip"] = works[i].find(class_="iswip").text
-        works_data[-1]["last_updated"] = works[i].find(class_="datetime").text
-        
+        date = works[i].find(class_="datetime").text
+        works_data[-1]["last_updated"] = convert_to_datetime(date)
+                
         ## Tags
         fandoms = works[i].find(class_="fandoms").find_all("a")
         for j in range(len(fandoms)):
