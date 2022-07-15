@@ -7,9 +7,9 @@ import math
 
 URL = "https://archiveofourown.org/works?commit=Sort+and+Filter&work_search%5Bsort_column%5D=revised_at&include_work_search%5Brating_ids%5D%5B%5D=10&work_search%5Bother_tag_names%5D=&work_search%5Bexcluded_tag_names%5D=&work_search%5Bcrossover%5D=&work_search%5Bcomplete%5D=&work_search%5Bwords_from%5D=&work_search%5Bwords_to%5D=&work_search%5Bdate_from%5D=&work_search%5Bdate_to%5D=&work_search%5Bquery%5D=&work_search%5Blanguage_id%5D=&tag_id=Our+Flag+Means+Death+%28TV%29"
 
-NUM = 501
+num = "all"
 GET_BODY = False ## This will mess up the formatting of the excel sheet, but the actual file is still fine
-GET_FIRST = False##Get first 100, or 100 distributed throughout works
+GET_FIRST = True##Get first 100, or 100 distributed throughout works
 CSV_FILE_NAME = "test2.csv"
 
 def get_page_content(url):
@@ -42,9 +42,11 @@ def get_page_number_url(content):
     return url
 
 def get_every_th_page(content):
+    if GET_FIRST:
+        return 1
     heading = content.find("h2", class_="heading").text.split()
     total_num_works = heading[heading.index("of") + 1]
-    return int(int(total_num_works)/NUM)
+    return int(int(total_num_works)/num)
 ## Checks that there is another page
 def get_still_more_works(content):
     next_url = content.find(class_="next")
@@ -68,17 +70,17 @@ def write_csv_file(works_data):
 content = get_page_content(URL)
 url_arr = get_page_number_url(content)
 still_more_works = True 
-if GET_FIRST:
-    every_th_page = 1
-else:
-    every_th_page = get_every_th_page(content)
+every_th_page = get_every_th_page(content)
+if(num == "all"):
+    heading = content.find("h2", class_="heading").text.split()
+    num = int(heading[heading.index("of") + 1])
 if(url_arr != None):
     url = url_arr[0] + str(url_arr[1]) + url_arr[2]
 else:
     url = URL
 works_data = []
 ## Analyze works
-while len(works_data) < NUM and still_more_works:
+while len(works_data) < num and still_more_works:
     content = get_page_content(url) ##Get contents
     works = content.find_all("li", class_="work") ##Get array of works
     still_more_works = get_still_more_works(content) ##Find if there aren't anymore works
@@ -86,10 +88,10 @@ while len(works_data) < NUM and still_more_works:
         url_arr[1] = url_arr[1] + every_th_page
         url = url_arr[0] + str(url_arr[1]) + url_arr[2]
     ## How many works to analyze
-    if NUM - len(works_data) > len(works):
+    if num - len(works_data) > len(works):
         works_to_analyze = len(works)
     else:
-        works_to_analyze = NUM - len(works_data)
+        works_to_analyze = num - len(works_data)
 
     for i in range(works_to_analyze):
         works_data.append({
