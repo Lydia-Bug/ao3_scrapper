@@ -6,12 +6,12 @@ import pandas as pd  ##Dependency
 import math
 import datetime
 
-URL = "https://archiveofourown.org/works?commit=Sort+and+Filter&work_search%5Bsort_column%5D=revised_at&include_work_search%5Brating_ids%5D%5B%5D=10&work_search%5Bother_tag_names%5D=&work_search%5Bexcluded_tag_names%5D=&work_search%5Bcrossover%5D=&work_search%5Bcomplete%5D=&work_search%5Bwords_from%5D=&work_search%5Bwords_to%5D=&work_search%5Bdate_from%5D=&work_search%5Bdate_to%5D=&work_search%5Bquery%5D=&work_search%5Blanguage_id%5D=&tag_id=Our+Flag+Means+Death+%28TV%29"
+URL = "https://archiveofourown.org/tags/Our%20Flag%20Means%20Death%20(TV)/works"
 
 num = "all"
 GET_BODY = False ## This will mess up the formatting of the excel sheet, but the actual file is still fine
 GET_FIRST = True##Get first 100, or 100 distributed throughout works
-CSV_FILE_NAME = "test2.csv"
+CSV_FILE_NAME = "allworks.csv"
 
 def get_page_content(url):
     ## Sometimes the page request or something doesn't work first go
@@ -145,6 +145,7 @@ while len(works_data) < num and still_more_works:
             "collections": "",
             "comments": "",
             "kudos": "",
+            "hits": "",
             "bookmarks": "",
             "body": "",
             "notes": []
@@ -213,6 +214,11 @@ while len(works_data) < num and still_more_works:
             works_data[-1]["kudos"] = kudos.text
         else: 
             works_data[-1]["kudos"] = 0
+        hits = works[i].find("dd", class_="hits")
+        if(hits != None):
+            works_data[-1]["hits"] = hits.text
+        else:
+            works_data[-1]["hits"] = 0
         bookmarks = works[i].find("dd", class_="bookmarks")
         if(bookmarks != None):
             works_data[-1]["bookmarks"] = bookmarks.text
@@ -220,7 +226,7 @@ while len(works_data) < num and still_more_works:
             works_data[-1]["bookmarks"] = 0
 
         ##Get rid of commas in values
-        for i in range(5):
+        for i in range(6):
             key = list(works_data[-1].keys())[i+15]
             if("," in str(works_data[-1][key])):
                 works_data[-1][key] = works_data[-1][key].replace(",", "")
