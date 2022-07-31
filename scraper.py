@@ -5,14 +5,16 @@ import csv
 import pandas as pd  ##Dependency
 import math
 import datetime
+import numpy as np
 
-URL = "https://archiveofourown.org/tags/Our%20Flag%20Means%20Death%20(TV)/works"
+URL = "https://archiveofourown.org/tags/What%20We%20Do%20in%20the%20Shadows%20(TV)/works"
 
-num = "all"
-GET_PUBLISHED = False ## This takes a while cause you have to into the fic to get this info
+num = "all" ##Set number or "all" to get all works
+GET_PUBLISHED = False ## (get when published) This takes a while cause you have to into the fic to get this info
 GET_BODY = False ## This will mess up the formatting of the excel sheet, but the actual file is still fine
-GET_FIRST = True ##Get first 100, or 100 distributed throughout works
-CSV_FILE_NAME = "allworks.csv"
+GET_FIRST = False ##Get first 100, or 100 distributed throughout works
+CSV_FILE_NAME = "wallworks.csv"
+CSV_RATES_NAME = "wallworksrate.csv"
 
 def get_page_content(url):
     ## Sometimes the page request or something doesn't work first go
@@ -45,6 +47,8 @@ def get_page_number_url(content):
 
 def get_every_th_page(content):
     if GET_FIRST:
+        return 1
+    if num == "all":
         return 1
     heading = content.find("h2", class_="heading").text.split()
     total_num_works = heading[heading.index("of") + 1]
@@ -95,10 +99,39 @@ def convert_to_datetime(date):
             month = 11
         elif(date[1] == "Dec"):
             month = 12
-    return datetime.datetime(year, month, day)
+    return datetime.date(year, month, day)
 
-def write_csv_file(works_data):
-    with open(CSV_FILE_NAME, 'w', encoding="utf-8", newline='') as file:
+def rates_and_total_amount_of_works_data(works_data):
+    last_updated_or_published = "last_updated" ## if data includes when published, uses that value, other wise last updated, which is always recorded
+    if works_data[0]["published"] != "":
+        last_updated_or_published = "published" 
+    dates = []
+    for i in range(len(works_data)):
+        if(not(works_data[i][last_updated_or_published] in dates)):
+            dates.append(works_data[i][last_updated_or_published])
+    dates.sort()
+    rate = np.zeros(len(dates) + 1)
+    total_works = np.zeros(len(dates) + 1)
+    for i in range(len(works_data)):
+        rate[dates.index(works_data[i][last_updated_or_published])] = 1 + rate[dates.index(works_data[i][last_updated_or_published])]
+    for i in range(len(dates)):
+        if i == 0:
+            total_works[i] = rate[i]
+        else:
+            total_works[i] = total_works[i-1] + rate[i]
+    
+    data = []
+    for i in range(len(dates)):
+        data.append({
+            "id": i, ## This is here because it couldn't get the dates column for whatever reason without it
+            "dates": dates[i],
+            "rate": rate[i],
+            "total_works": total_works[i]})
+
+    write_csv_file(data, CSV_RATES_NAME)
+
+def write_csv_file(works_data, file_name):
+    with open(file_name, 'w', encoding="utf-8", newline='') as file:
         writer = csv.writer(file)
         writer.writerow(list(works_data[0].keys()))
         for i in range(len(works_data)):
@@ -265,4 +298,7 @@ while len(works_data) < num and still_more_works:
 
         print("works analyzed: %d" % len(works_data))
 
-write_csv_file(works_data)
+
+write_csv_file(works_data, CSV_FILE_NAME)
+
+rates_and_total_amount_of_works_data(works_data)
