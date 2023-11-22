@@ -144,7 +144,7 @@ still_more_works = True
 every_th_page = get_every_th_page(content)
 if(num == "all"):
     heading = content.find("h2", class_="heading").text.split()
-    num = int(heading[heading.index("of") + 1])
+    num = int(heading[heading.index("of") + 1].replace(",", ""))
 if(url_arr != None):
     url = url_arr[0] + str(url_arr[1]) + url_arr[2]
 else:
